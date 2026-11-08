@@ -1,695 +1,1327 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScanKu PDF</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScanKu PDF - Pemindai Dokumen Profesional</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --accent: #8b5cf6;
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
 
-:root {
-  --primary:#4f46e5;
-  --primary-dark:#4338ca;
-  --bg:#f5f6fc;
-  --text:#202238;
-  --muted:#777b91;
-  --white:#fff;
-  --border:#e6e7ef;
-  --danger:#ef4444;
-}
-* {box-sizing:border-box}
-body {
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,Arial,sans-serif;
-}
-button,input {font:inherit}
-button {cursor:pointer}
-#app-container {
-  width:100%;
-  max-width:650px;
-  min-height:100vh;
-  margin:auto;
-  background:var(--bg);
-  padding-bottom:30px;
-}
-.app-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:20px;
-  background:white;
-  border-bottom:1px solid var(--border);
-}
-.logo {font-size:23px;font-weight:800;color:var(--primary)}
-.badge-pdf {
-  background:#eeeefe;
-  color:var(--primary);
-  padding:6px 11px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:700;
-}
-#page-counter {
-  background:var(--primary);
-  color:white;
-  padding:7px 12px;
-  border-radius:20px;
-  font-size:12px;
-}
-.view {padding:22px;display:none}
-.view.active {display:block}
-h1 {font-size:25px;margin:8px 0}
-.subtitle {color:var(--muted);font-size:14px;line-height:1.6}
-.home-hero {
-  text-align:center;
-  padding:35px 10px 25px;
-}
-.hero-icon {
-  width:100px;height:100px;
-  margin:0 auto 20px;
-  display:grid;place-items:center;
-  background:#e9e8ff;
-  border-radius:30px;
-  color:var(--primary);
-  font-size:42px;
-}
-.action-card {
-  background:white;
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:20px;
-  margin:14px 0;
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-.action-card i {font-size:25px;color:var(--primary);width:35px;text-align:center}
-.action-card h3 {margin:0 0 5px;font-size:15px}
-.action-card p {margin:0;color:var(--muted);font-size:12px}
-.btn {
-  border:0;
-  border-radius:12px;
-  padding:14px 17px;
-  font-weight:700;
-  font-size:14px;
-}
-.btn-primary {background:var(--primary);color:white}
-.btn-primary:active {background:var(--primary-dark)}
-.btn-light {background:#eeeefe;color:var(--primary)}
-.btn-danger {background:#fee2e2;color:var(--danger)}
-.btn-block {width:100%;margin-top:12px}
-.btn-row {display:flex;gap:10px;margin-top:18px}
-.btn-row .btn {flex:1}
-input[type=file] {display:none}
-.section-title {font-size:17px;font-weight:800;margin:20px 0 10px}
-.camera-box {
-  background:#111;
-  border-radius:18px;
-  overflow:hidden;
-  width:100%;
-  min-height:250px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-#camera-stream {width:100%;max-height:65vh;object-fit:contain}
-#camera-canvas {display:none}
-.editor-image-wrap {
-  position:relative;
-  width:100%;
-  margin:18px auto;
-  overflow:hidden;
-  background:#222;
-  border-radius:12px;
-  touch-action:none;
-}
-#editor-canvas {display:block;width:100%;height:auto}
-.crop-overlay {
-  position:absolute;inset:0;
-  pointer-events:none;
-}
-#crop-lines-svg {width:100%;height:100%;position:absolute;inset:0}
-#crop-polygon {
-  fill:rgba(79,70,229,.12);
-  stroke:#fff;stroke-width:2;
-  stroke-dasharray:6 4;
-}
-.crop-handle {
-  position:absolute;
-  width:22px;height:22px;
-  border:3px solid white;
-  border-radius:50%;
-  background:var(--primary);
-  transform:translate(-50%,-50%);
-  pointer-events:auto;
-  touch-action:none;
-  z-index:2;
-}
-.filter-list {
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-  margin:12px 0;
-}
-.filter-btn {
-  border:1px solid var(--border);
-  background:white;
-  border-radius:10px;
-  padding:12px 3px;
-  font-size:11px;
-  font-weight:700;
-  color:var(--muted);
-}
-.filter-btn.active {
-  border:2px solid var(--primary);
-  color:var(--primary);
-  background:#f0efff;
-}
-.slider-group {margin:17px 0}
-.slider-group label {
-  display:flex;justify-content:space-between;
-  font-size:13px;font-weight:600;margin-bottom:8px;
-}
-input[type=range] {width:100%;accent-color:var(--primary)}
-#thumbnail-container {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:13px;
-  margin-top:18px;
-}
-.thumb-card {
-  background:white;
-  border:1px solid var(--border);
-  border-radius:13px;
-  overflow:hidden;
-}
-.thumb-preview {
-  display:block;width:100%;
-  height:180px;object-fit:contain;
-  background:#e9e9ef;
-}
-.thumb-footer {padding:10px}
-.thumb-num {font-size:12px;font-weight:700}
-.thumb-actions {display:flex;gap:5px;margin-top:9px}
-.thumb-btn {
-  flex:1;border:0;border-radius:7px;
-  padding:8px 4px;background:#eeeefe;
-  color:var(--primary);
-}
-.thumb-btn.delete {background:#fee2e2;color:var(--danger)}
-.thumb-btn:disabled {cursor:not-allowed}
-.modal {
-  position:fixed;inset:0;z-index:10;
-  background:rgba(15,15,30,.7);
-  display:flex;align-items:center;justify-content:center;
-  padding:15px;
-}
-.modal-content {
-  background:white;border-radius:18px;
-  width:100%;max-width:550px;
-  max-height:90vh;overflow:auto;padding:20px;
-}
-.modal-header {
-  display:flex;align-items:center;
-  justify-content:space-between;margin-bottom:15px;
-}
-.modal-header h2 {font-size:18px;margin:0}
-#pdf-preview-iframe {width:100%;height:55vh;border:0}
-#pdf-filename {
-  width:100%;padding:13px;
-  border:1px solid var(--border);
-  border-radius:10px;margin:12px 0;
-}
-#pdf-preview-placeholder {
-  padding:40px 10px;text-align:center;
-  color:var(--muted);background:var(--bg);
-  border-radius:10px;
-}
-#loading-overlay {
-  position:fixed;inset:0;z-index:20;
-  background:rgba(255,255,255,.88);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:15px;font-weight:700;
-}
-.spinner {
-  width:42px;height:42px;
-  border:4px solid #ddd;
-  border-top-color:var(--primary);
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-}
-@keyframes spin {to{transform:rotate(360deg)}}
-.hidden {display:none!important}
-@media(max-width:380px) {
-  .view {padding:16px}
-  .filter-list {gap:4px}
-  .filter-btn {font-size:10px}
-}
-</style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 900px;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            #app-container {
+                border-radius: 24px;
+                border: 1px solid var(--border);
+                height: 85vh;
+            }
+        }
+
+        /* Header */
+        .app-header {
+            padding: 16px 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .badge-pdf {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        .page-counter {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Main Views */
+        .app-main {
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            transition: opacity 0.2s ease;
+        }
+
+        .view.hidden {
+            display: none !important;
+        }
+
+        .view.active {
+            display: flex !important;
+        }
+
+        /* Home View */
+        #view-home {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 24px;
+        }
+
+        .hero-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero-icon {
+            width: 64px;
+            height: 64px;
+            background: #eef2ff;
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+
+        .hero-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .hero-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            max-width: 320px;
+        }
+
+        .action-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .features-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px 20px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .feature-item i {
+            color: #10b981;
+        }
+
+        /* Camera View */
+        #view-camera {
+            background: #000;
+            padding: 0;
+            justify-content: space-between;
+        }
+
+        .camera-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-controls {
+            height: 100px;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 20px;
+        }
+
+        .btn-icon {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-capture-ring {
+            width: 70px;
+            height: 70px;
+            border: 4px solid white;
+            border-radius: 50%;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .inner-circle {
+            width: 54px;
+            height: 54px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.1s;
+        }
+
+        .btn-capture-ring:active .inner-circle {
+            transform: scale(0.9);
+        }
+
+        .placeholder-space {
+            width: 44px;
+        }
+
+        /* Editor / Crop View */
+        #view-editor {
+            padding: 10px;
+            background: #0f172a;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .canvas-crop-wrapper {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #editor-canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 50vh;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .crop-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #crop-polygon {
+            fill: rgba(79, 70, 229, 0.2);
+            stroke: var(--primary);
+            stroke-width: 2;
+            stroke-dasharray: 4;
+        }
+
+        .editor-toolbar {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .filter-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .adjust-sliders {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .slider-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .slider-box label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .slider-box input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-subtle {
+            flex: 1;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .btn-main {
+            flex: 2;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        /* Manager / Thumbnail View */
+        #view-manager {
+            padding: 20px;
+            gap: 16px;
+        }
+
+        .manager-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .manager-header-bar h2 {
+            font-size: 1.2rem;
+        }
+
+        .btn-outline-sm {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .thumbnail-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding-bottom: 20px;
+        }
+
+        @media(min-width: 400px) {
+            .thumbnail-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .thumb-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .thumb-preview {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            background: #f1f5f9;
+        }
+
+        .thumb-footer {
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+        }
+
+        .thumb-num {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .thumb-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .thumb-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 2px;
+        }
+
+        .thumb-btn.delete {
+            color: var(--danger);
+        }
+
+        .manager-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-secondary-action {
+            flex: 1;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .btn-primary-action {
+            flex: 1.5;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Modal */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal.hidden {
+            display: none !important;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .input-group input {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .pdf-preview-box {
+            width: 100%;
+            height: 180px;
+            background: #f8fafc;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .preview-placeholder i {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        #pdf-preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 200;
+        }
+
+        .loading-overlay.hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
-<div id="app-container">
-  <header class="app-header">
-    <div class="logo"><i class="fa-solid fa-file-pdf"></i> ScanKu</div>
-    <span class="badge-pdf">PDF SCANNER</span>
-    <span id="page-counter" class="hidden">0 Halaman</span>
-  </header>
+    <!-- App Container -->
+    <div id="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-file-shield"></i>
+                <span>ScanKu<span class="badge-pdf">PDF</span></span>
+            </div>
+            <div id="page-counter" class="page-counter hidden">0 Halaman</div>
+        </header>
 
-  <!-- HOME -->
-  <section id="view-home" class="view active">
-    <div class="home-hero">
-      <div class="hero-icon"><i class="fa-solid fa-file-arrow-down"></i></div>
-      <h1>Scan dokumenmu!</h1>
-      <p class="subtitle">Ubah dokumen fisik menjadi PDF dengan mudah dan cepat.</p>
+        <!-- Main Content Area -->
+        <main class="app-main">
+            
+            <!-- VIEW 1: Dashboard Home -->
+            <section id="view-home" class="view active">
+                <div class="hero-card">
+                    <div class="hero-icon">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h1>Pemindai Dokumen Pintar</h1>
+                    <p>Ubah dokumen fisik, catatan, atau kartu identitas Anda menjadi PDF berkualitas tinggi secara instan di browser.</p>
+                </div>
+
+                <div class="action-grid">
+                    <button id="btn-open-camera" class="action-btn primary">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Scan Kamera</span>
+                    </button>
+                    <button id="btn-open-upload" class="action-btn secondary">
+                        <i class="fa-solid fa-image"></i>
+                        <span>Upload Gambar</span>
+                    </button>
+                    <input type="file" id="file-input" accept="image/*" multiple class="hidden">
+                </div>
+
+                <div class="features-list">
+                    <div class="feature-item"><i class="fa-solid fa-check"></i> Deteksi & Filter Otomatis</div>
+                    <div class="feature-item"><i class="fa-solid fa-check"></i> Multi-halaman & Atur Urutan</div>
+                    <div class="feature-item"><i class="fa-solid fa-check"></i> 100% Aman & Tanpa Server</div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: Camera Modal / Screen -->
+            <section id="view-camera" class="view hidden">
+                <div class="camera-wrapper">
+                    <video id="camera-stream" autoplay playsinline></video>
+                    <canvas id="camera-canvas" class="hidden"></canvas>
+                </div>
+                <div class="camera-controls">
+                    <button id="btn-close-camera" class="btn-icon"><i class="fa-solid fa-xmark"></i></button>
+                    <button id="btn-capture" class="btn-capture-ring"><div class="inner-circle"></div></button>
+                    <div class="placeholder-space"></div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: Editor & Crop Screen -->
+            <section id="view-editor" class="view hidden">
+                <div class="editor-container">
+                    <div class="canvas-crop-wrapper" id="crop-wrapper">
+                        <canvas id="editor-canvas"></canvas>
+                        <!-- Titik Sudut Crop Interaktif -->
+                        <div class="crop-handle" id="handle-tl" data-id="tl"></div>
+                        <div class="crop-handle" id="handle-tr" data-id="tr"></div>
+                        <div class="crop-handle" id="handle-bl" data-id="bl"></div>
+                        <div class="crop-handle" id="handle-br" data-id="br"></div>
+                        <svg class="crop-lines" id="crop-lines-svg">
+                            <polygon id="crop-polygon" points="" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Control Panel Editor -->
+                <div class="editor-toolbar">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="original">Original</button>
+                        <button class="filter-btn" data-filter="grayscale">B&W</button>
+                        <button class="filter-btn" data-filter="magic">Magic Color</button>
+                        <button class="filter-btn" data-filter="darken">High Contrast</button>
+                    </div>
+                    <div class="adjust-sliders">
+                        <div class="slider-box">
+                            <label><i class="fa-solid fa-sun"></i> Kecerahan</label>
+                            <input type="range" id="range-brightness" min="-100" max="100" value="0">
+                        </div>
+                        <div class="slider-box">
+                            <label><i class="fa-solid fa-circle-half-stroke"></i> Kontras</label>
+                            <input type="range" id="range-contrast" min="-100" max="100" value="0">
+                        </div>
+                    </div>
+                    <div class="editor-actions">
+                        <button id="btn-cancel-crop" class="btn-subtle"><i class="fa-solid fa-rotate-left"></i> Ulang</button>
+                        <button id="btn-apply-crop" class="btn-main"><i class="fa-solid fa-check"></i> Simpan Halaman</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: Multi-Page Manager & Preview -->
+            <section id="view-manager" class="view hidden">
+                <div class="manager-header-bar">
+                    <h2>Kelola Halaman Dokumen</h2>
+                    <button id="btn-add-more" class="btn-outline-sm"><i class="fa-solid fa-plus"></i> Tambah</button>
+                </div>
+                
+                <div id="thumbnail-container" class="thumbnail-grid">
+                    <!-- Thumbnail item dirender via JS -->
+                </div>
+
+                <div class="manager-actions">
+                    <button id="btn-preview-pdf" class="btn-secondary-action"><i class="fa-solid fa-eye"></i> Preview PDF</button>
+                    <button id="btn-generate-pdf" class="btn-primary-action"><i class="fa-solid fa-file-arrow-down"></i> Buat & Unduh PDF</button>
+                </div>
+            </section>
+
+        </main>
     </div>
 
-    <button id="btn-open-camera" class="btn btn-primary btn-block">
-      <i class="fa-solid fa-camera"></i> Scan dengan Kamera
-    </button>
-
-    <button id="btn-open-upload" class="btn btn-light btn-block">
-      <i class="fa-solid fa-images"></i> Upload dari Galeri
-    </button>
-    <input id="file-input" type="file" accept="image/*" multiple>
-    <p class="subtitle" style="text-align:center;margin-top:20px">
-      ScanKu PDF · Praktis dan gratis
-    </p>
-  </section>
-
-  <!-- CAMERA -->
-  <section id="view-camera" class="view">
-    <h1>Ambil Foto</h1>
-    <p class="subtitle">Arahkan kamera ke dokumen yang ingin dipindai.</p>
-    <div class="camera-box">
-      <video id="camera-stream" autoplay playsinline></video>
-      <canvas id="camera-canvas"></canvas>
-    </div>
-    <div class="btn-row">
-      <button id="btn-close-camera" class="btn btn-light">Kembali</button>
-      <button id="btn-capture" class="btn btn-primary">
-        <i class="fa-solid fa-camera"></i> Ambil Foto
-      </button>
-    </div>
-  </section>
-
-  <!-- EDITOR -->
-  <section id="view-editor" class="view">
-    <h1>Edit Dokumen</h1>
-    <p class="subtitle">Atur area potong dengan menggeser empat titik di sudut gambar.</p>
-
-    <div class="editor-image-wrap" id="crop-wrapper">
-      <canvas id="editor-canvas"></canvas>
-      <div class="crop-overlay">
-        <svg id="crop-lines-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <polygon id="crop-polygon" points=""></polygon>
-        </svg>
-        <div class="crop-handle" id="handle-tl" data-id="tl"></div>
-        <div class="crop-handle" id="handle-tr" data-id="tr"></div>
-        <div class="crop-handle" id="handle-bl" data-id="bl"></div>
-        <div class="crop-handle" id="handle-br" data-id="br"></div>
-      </div>
+    <!-- Modal Nama File & Preview -->
+    <div id="modal-pdf" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Konfirmasi & Unduh PDF</h3>
+                <button id="btn-close-modal" class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="pdf-filename">Nama File PDF</label>
+                    <input type="text" id="pdf-filename" value="Dokumen_ScanKu" placeholder="Masukkan nama file...">
+                </div>
+                <div class="pdf-preview-box">
+                    <iframe id="pdf-preview-iframe" class="hidden"></iframe>
+                    <div id="pdf-preview-placeholder" class="preview-placeholder">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Dokumen siap diunduh</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-download-final" class="btn-main w-full"><i class="fa-solid fa-download"></i> Unduh PDF Sekarang</button>
+            </div>
+        </div>
     </div>
 
-    <div class="section-title">Filter Dokumen</div>
-    <div class="filter-list">
-      <button class="filter-btn active" data-filter="original">Asli</button>
-      <button class="filter-btn" data-filter="grayscale">Abu-abu</button>
-      <button class="filter-btn" data-filter="magic">Magic</button>
-      <button class="filter-btn" data-filter="darken">Hitam Putih</button>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loading-text">Memproses dokumen...</p>
     </div>
 
-    <div class="slider-group">
-      <label>Kecerahan <span id="brightness-value">0</span></label>
-      <input id="range-brightness" type="range" min="-100" max="100" value="0">
-    </div>
-    <div class="slider-group">
-      <label>Kontras <span id="contrast-value">0</span></label>
-      <input id="range-contrast" type="range" min="-100" max="100" value="0">
-    </div>
+    <!-- JavaScript Logic -->
+    <script>
+        let pages = []; 
+        let activePageId = null;
+        let videoStream = null;
 
-    <div class="btn-row">
-      <button id="btn-cancel-crop" class="btn btn-light">Batal</button>
-      <button id="btn-apply-crop" class="btn btn-primary">Simpan Halaman</button>
-    </div>
-  </section>
+        const views = {
+            home: document.getElementById('view-home'),
+            camera: document.getElementById('view-camera'),
+            editor: document.getElementById('view-editor'),
+            manager: document.getElementById('view-manager')
+        };
 
-  <!-- MANAGER -->
-  <section id="view-manager" class="view">
-    <h1>Halaman Dokumen</h1>
-    <p class="subtitle">Atur urutan halaman atau hapus halaman yang tidak diperlukan.</p>
-    <div id="thumbnail-container"></div>
+        const pageCounter = document.getElementById('page-counter');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
 
-    <button id="btn-add-more" class="btn btn-light btn-block">
-      <i class="fa-solid fa-plus"></i> Tambah Halaman
-    </button>
-    <button id="btn-preview-pdf" class="btn btn-primary btn-block">
-      <i class="fa-solid fa-eye"></i> Preview PDF
-    </button>
-    <button id="btn-generate-pdf" class="btn btn-primary btn-block">
-      <i class="fa-solid fa-download"></i> Buat PDF
-    </button>
-  </section>
-</div>
+        document.getElementById('btn-open-camera').addEventListener('click', startCamera);
+        document.getElementById('btn-open-upload').addEventListener('click', () => document.getElementById('file-input').click());
+        document.getElementById('file-input').addEventListener('change', handleImageUpload);
+        document.getElementById('btn-close-camera').addEventListener('click', stopCamera);
+        document.getElementById('btn-capture').addEventListener('click', captureCameraImage);
+        document.getElementById('btn-add-more').addEventListener('click', () => switchView('home'));
+        document.getElementById('btn-cancel-crop').addEventListener('click', () => switchView(pages.length > 0 ? 'manager' : 'home'));
+        document.getElementById('btn-apply-crop').addEventListener('click', applyCropAndFilters);
 
-<!-- PDF MODAL -->
-<div id="modal-pdf" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Preview PDF</h2>
-      <button id="btn-close-modal" class="btn btn-light" aria-label="Tutup">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-    <div id="pdf-preview-placeholder">Menyiapkan preview PDF...</div>
-    <iframe id="pdf-preview-iframe" class="hidden"></iframe>
-    <label for="pdf-filename">Nama file PDF</label>
-    <input id="pdf-filename" type="text" value="Dokumen_ScanKu">
-    <button id="btn-download-final" class="btn btn-primary btn-block">
-      <i class="fa-solid fa-download"></i> Download PDF
-    </button>
-  </div>
-</div>
+        document.getElementById('btn-preview-pdf').addEventListener('click', openPreviewModal);
+        document.getElementById('btn-generate-pdf').addEventListener('click', openPreviewModal);
 
-<div id="loading-overlay" class="hidden">
-  <div class="spinner"></div>
-  <span id="loading-text">Memproses...</span>
-</div>
+        const modalPdf = document.getElementById('modal-pdf');
+        document.getElementById('btn-close-modal').addEventListener('click', () => modalPdf.classList.add('hidden'));
+        document.getElementById('btn-download-final').addEventListener('click', generateAndDownloadPDF);
 
-<script>
-"use strict";
+        function switchView(viewName) {
+            Object.keys(views).forEach(key => {
+                views[key].classList.add('hidden');
+                views[key].classList.remove('active');
+            });
+            views[viewName].classList.add('active');
 
-// ===============================
-// GLOBAL STATE
-// ===============================
-let pages = [];
-let videoStream = null;
-let currentSourceImage = null;
-let cropPoints = {};
-let activeFilter = "original";
-let previewUrl = null;
+            if (pages.length > 0) {
+                pageCounter.classList.remove('hidden');
+                pageCounter.innerText = `${pages.length} Halaman`;
+            } else {
+                pageCounter.classList.add('hidden');
+            }
+        }
 
-const views = {
-  home: document.getElementById("view-home"),
-  camera: document.getElementById("view-camera"),
-  editor: document.getElementById("view-editor"),
-  manager: document.getElementById("view-manager")
-};
+        function showLoading(text = 'Memproses...') {
+            loadingText.innerText = text;
+            loadingOverlay.classList.remove('hidden');
+        }
 
-const pageCounter = document.getElementById("page-counter");
-const loadingOverlay = document.getElementById("loading-overlay");
-const loadingText = document.getElementById("loading-text");
-const modalPdf = document.getElementById("modal-pdf");
-const editorCanvas = document.getElementById("editor-canvas");
-const editorCtx = editorCanvas.getContext("2d");
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
 
-// ===============================
-// NAVIGATION
-// ===============================
-function switchView(name) {
-  Object.values(views).forEach(view => view.classList.remove("active"));
-  views[name].classList.add("active");
-  updateCounter();
-}
+        async function startCamera() {
+            switchView('camera');
+            const video = document.getElementById('camera-stream');
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                video.srcObject = videoStream;
+            } catch (err) {
+                alert('Tidak dapat mengakses kamera perangkat. Pastikan izin kamera diberikan.');
+                switchView('home');
+            }
+        }
 
-function updateCounter() {
-  if (pages.length) {
-    pageCounter.classList.remove("hidden");
-    pageCounter.textContent = pages.length + " Halaman";
-  } else {
-    pageCounter.classList.add("hidden");
-  }
-}
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            switchView(pages.length > 0 ? 'manager' : 'home');
+        }
 
-function showLoading(message = "Memproses...") {
-  loadingText.textContent = message;
-  loadingOverlay.classList.remove("hidden");
-}
+        function captureCameraImage() {
+            const video = document.getElementById('camera-stream');
+            const canvas = document.getElementById('camera-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-function hideLoading() {
-  loadingOverlay.classList.add("hidden");
-}
+            stopCamera();
+            loadIntoEditor(canvas);
+        }
 
-// ===============================
-// CAMERA
-// ===============================
-document.getElementById("btn-open-camera").addEventListener("click", startCamera);
-document.getElementById("btn-close-camera").addEventListener("click", stopCamera);
-document.getElementById("btn-capture").addEventListener("click", captureCameraImage);
+        function handleImageUpload(e) {
+            const files = e.target.files;
+            if (!files.length) return;
 
-async function startCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("Browser tidak mendukung kamera. Gunakan browser terbaru dan HTTPS.");
-    return;
-  }
+            showLoading('Memuat gambar...');
+            let processedCount = 0;
 
-  try {
-    switchView("camera");
-    videoStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: "environment" },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      },
-      audio: false
-    });
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
 
-    document.getElementById("camera-stream").srcObject = videoStream;
-  } catch (error) {
-    console.error(error);
-    alert("Tidak dapat mengakses kamera. Periksa izin kamera browser.");
-    stopCamera();
-  }
-}
+                        if (processedCount === 0) {
+                            loadIntoEditor(canvas);
+                        } else {
+                            const pageObj = {
+                                id: 'page_' + Date.now() + Math.random(),
+                                dataUrl: canvas.toDataURL('image/jpeg', 0.85)
+                            };
+                            pages.push(pageObj);
+                            updateManagerView();
+                        }
 
-function stopCamera() {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-    videoStream = null;
-  }
+                        processedCount++;
+                        if (processedCount === files.length) {
+                            hideLoading();
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = '';
+        }
 
-  document.getElementById("camera-stream").srcObject = null;
-  switchView(pages.length ? "manager" : "home");
-}
+        let editorCanvas = document.getElementById('editor-canvas');
+        let editorCtx = editorCanvas.getContext('2d');
+        let currentSourceImage = null;
+        let cropPoints = {};
 
-function captureCameraImage() {
-  const video = document.getElementById("camera-stream");
+        function loadIntoEditor(sourceCanvas) {
+            currentSourceImage = sourceCanvas;
+            switchView('editor');
 
-  if (!video.videoWidth || !video.videoHeight) {
-    alert("Kamera belum siap. Coba lagi.");
-    return;
-  }
+            editorCanvas.width = sourceCanvas.width;
+            editorCanvas.height = sourceCanvas.height;
+            editorCtx.drawImage(sourceCanvas, 0, 0);
 
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext("2d").drawImage(video, 0, 0);
+            const w = sourceCanvas.width;
+            const h = sourceCanvas.height;
+            cropPoints = {
+                tl: { x: w * 0.1, y: h * 0.1 },
+                tr: { x: w * 0.9, y: h * 0.1 },
+                br: { x: w * 0.9, y: h * 0.9 },
+                bl: { x: w * 0.1, y: h * 0.9 }
+            };
 
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-    videoStream = null;
-  }
+            initCropInteraction();
+            updateCropUI();
+            resetFiltersAndSliders();
+        }
 
-  video.srcObject = null;
-  loadIntoEditor(canvas);
-}
+        function updateCropUI() {
+            const scaleX = editorCanvas.width / editorCanvas.offsetWidth;
+            const scaleY = editorCanvas.height / editorCanvas.offsetHeight;
 
-// ===============================
-// IMAGE UPLOAD
-// ===============================
-document.getElementById("btn-open-upload").addEventListener("click", () => {
-  document.getElementById("file-input").click();
-});
+            ['tl', 'tr', 'bl', 'br'].forEach(id => {
+                const handle = document.getElementById('handle-' + id);
+                handle.style.left = (cropPoints[id].x / scaleX) + 'px';
+                handle.style.top = (cropPoints[id].y / scaleY) + 'px';
+            });
 
-document.getElementById("file-input").addEventListener("change", handleImageUpload);
+            const polyPoints = `${cropPoints.tl.x / scaleX},${cropPoints.tl.y / scaleY} ` +
+                               `${cropPoints.tr.x / scaleX},${cropPoints.tr.y / scaleY} ` +
+                               `${cropPoints.br.x / scaleX},${cropPoints.br.y / scaleY} ` +
+                               `${cropPoints.bl.x / scaleX},${cropPoints.bl.y / scaleY}`;
+            document.getElementById('crop-polygon').setAttribute('points', polyPoints);
+        }
 
-async function handleImageUpload(event) {
-  const files = Array.from(event.target.files || []);
-  if (!files.length) return;
+        function initCropInteraction() {
+            const handles = document.querySelectorAll('.crop-handle');
+            let activeHandle = null;
 
-  showLoading("Memuat gambar...");
+            handles.forEach(handle => {
+                const onStart = (e) => {
+                    activeHandle = handle.getAttribute('data-id');
+                    e.preventDefault();
+                };
+                handle.addEventListener('mousedown', onStart);
+                handle.addEventListener('touchstart', onStart);
+            });
 
-  try {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+            const onMove = (e) => {
+                if (!activeHandle) return;
+                const rect = editorCanvas.getBoundingClientRect();
+                let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                let clientY = e.clientY || (e.touches && e.touches[0].clientY);
 
-      if (!file.type.startsWith("image/")) continue;
+                let x = (clientX - rect.left) * (editorCanvas.width / editorCanvas.offsetWidth);
+                let y = (clientY - rect.top) * (editorCanvas.height / editorCanvas.offsetHeight);
 
-      const image = await readImageFile(file);
-      const canvas = document.createElement("canvas");
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      canvas.getContext("2d").drawImage(image, 0, 0);
+                x = Math.max(0, Math.min(editorCanvas.width, x));
+                y = Math.max(0, Math.min(editorCanvas.height, y));
 
-      if (i === 0) {
-        loadIntoEditor(canvas);
-      } else {
-        pages.push({
-          id: "page_" + Date.now() + "_" + i,
-          dataUrl: canvas.toDataURL("image/jpeg", 0.9)
+                cropPoints[activeHandle] = { x, y };
+                updateCropUI();
+            };
+
+            const onEnd = () => { activeHandle = null; };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('touchmove', onMove);
+            window.addEventListener('mouseup', onEnd);
+            window.addEventListener('touchend', onEnd);
+        }
+
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        let activeFilter = 'original';
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = btn.getAttribute('data-filter');
+                redrawEditorCanvas();
+            });
         });
-      }
-    }
 
-    updateManagerView();
-  } catch (error) {
-    console.error(error);
-    alert("Ada gambar yang gagal dimuat.");
-  } finally {
-    hideLoading();
-    event.target.value = "";
-  }
-}
+        document.getElementById('range-brightness').addEventListener('input', redrawEditorCanvas);
+        document.getElementById('range-contrast').addEventListener('input', redrawEditorCanvas);
 
-function readImageFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+        function resetFiltersAndSliders() {
+            activeFilter = 'original';
+            filterBtns.forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-filter="original"]').classList.add('active');
+            document.getElementById('range-brightness').value = 0;
+            document.getElementById('range-contrast').value = 0;
+            redrawEditorCanvas();
+        }
 
-    reader.onload = () => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = reject;
-      image.src = reader.result;
-    };
+        function redrawEditorCanvas() {
+            if (!currentSourceImage) return;
+            editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+            editorCtx.drawImage(currentSourceImage, 0, 0);
 
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+            let imgData = editorCtx.getImageData(0, 0, editorCanvas.width, editorCanvas.height);
+            let data = imgData.data;
+            let brightness = parseInt(document.getElementById('range-brightness').value);
+            let contrast = parseInt(document.getElementById('range-contrast').value);
+            let factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
-// ===============================
-// EDITOR AND CROP
-// ===============================
-function loadIntoEditor(canvas) {
-  currentSourceImage = canvas;
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i+1], b = data[i+2];
 
-  editorCanvas.width = canvas.width;
-  editorCanvas.height = canvas.height;
+                if (activeFilter === 'grayscale') {
+                    let avg = (r + g + b) / 3;
+                    r = g = b = avg;
+                } else if (activeFilter === 'magic') {
+                    let avg = (r * 0.3 + g * 0.59 + b * 0.11);
+                    r = g = b = avg > 140 ? 255 : avg * 0.8;
+                } else if (activeFilter === 'darken') {
+                    let avg = (r + g + b) / 3;
+                    r = g = b = avg < 120 ? 0 : 255;
+                }
 
-  cropPoints = {
-    tl: { x: canvas.width * 0.08, y: canvas.height * 0.08 },
-    tr: { x: canvas.width * 0.92, y: canvas.height * 0.08 },
-    br: { x: canvas.width * 0.92, y: canvas.height * 0.92 },
-    bl: { x: canvas.width * 0.08, y: canvas.height * 0.92 }
-  };
+                r = factor * (r - 128) + 128 + brightness;
+                g = factor * (g - 128) + 128 + brightness;
+                b = factor * (b - 128) + 128 + brightness;
 
-  resetFiltersAndSliders();
-  switchView("editor");
+                data[i]   = Math.min(255, Math.max(0, r));
+                data[i+1] = Math.min(255, Math.max(0, g));
+                data[i+2] = Math.min(255, Math.max(0, b));
+            }
 
-  requestAnimationFrame(updateCropUI);
-}
+            editorCtx.putImageData(imgData, 0, 0);
+        }
 
-function updateCropUI() {
-  if (!editorCanvas.offsetWidth) return;
+        function applyCropAndFilters() {
+            showLoading('Memproses koreksi dokumen...');
+            setTimeout(() => {
+                const outputCanvas = document.createElement('canvas');
+                const width = Math.max(
+                    Math.hypot(cropPoints.tr.x - cropPoints.tl.x, cropPoints.tr.y - cropPoints.tl.y),
+                    Math.hypot(cropPoints.br.x - cropPoints.bl.x, cropPoints.br.y - cropPoints.bl.y)
+                );
+                const height = Math.max(
+                    Math.hypot(cropPoints.bl.x - cropPoints.tl.x, cropPoints.bl.y - cropPoints.tl.y),
+                    Math.hypot(cropPoints.br.x - cropPoints.tr.x, cropPoints.br.y - cropPoints.tr.y)
+                );
 
-  const scaleX = editorCanvas.offsetWidth / editorCanvas.width;
-  const scaleY = editorCanvas.offsetHeight / editorCanvas.height;
+                outputCanvas.width = width;
+                outputCanvas.height = height;
+                const outCtx = outputCanvas.getContext('2d');
 
-  ["tl", "tr", "bl", "br"].forEach(id => {
-    const handle = document.getElementById("handle-" + id);
-    handle.style.left = (cropPoints[id].x * scaleX) + "px";
-    handle.style.top = (cropPoints[id].y * scaleY) + "px";
-  });
+                outCtx.drawImage(
+                    editorCanvas,
+                    Math.min(cropPoints.tl.x, cropPoints.bl.x),
+                    Math.min(cropPoints.tl.y, cropPoints.tr.y),
+                    width, height,
+                    0, 0, width, height
+                );
 
-  const points = ["tl", "tr", "br", "bl"].map(id =>
-    `${cropPoints[id].x * scaleX},${cropPoints[id].y * scaleY}`
-  ).join(" ");
+                const pageObj = {
+                    id: 'page_' + Date.now(),
+                    dataUrl: outputCanvas.toDataURL('image/jpeg', 0.9)
+                };
 
-  document.getElementById("crop-polygon").setAttribute("points", points);
-}
+                pages.push(pageObj);
+                hideLoading();
+                updateManagerView();
+                switchView('manager');
+            }, 100);
+        }
 
-let activeHandle = null;
+        function updateManagerView() {
+            const container = document.getElementById('thumbnail-container');
+            container.innerHTML = '';
 
-document.querySelectorAll(".crop-handle").forEach(handle => {
-  handle.addEventListener("pointerdown", event => {
-    activeHandle = handle.dataset.id;
-    handle.setPointerCapture(event.pointerId);
-    event.preventDefault();
-  });
+            pages.forEach((page, index) => {
+                const card = document.createElement('div');
+                card.className = 'thumb-card';
+                card.innerHTML = `
+                    <img src="${page.dataUrl}" class="thumb-preview" alt="Halaman ${index + 1}">
+                    <div class="thumb-footer">
+                        <span class="thumb-num">Hal ${index + 1}</span>
+                        <div class="thumb-actions">
+                            <button class="thumb-btn" onclick="movePage(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}><i class="fa-solid fa-chevron-left"></i></button>
+                            <button class="thumb-btn" onclick="movePage(${index}, 1)" ${index === pages.length - 1 ? 'disabled style="opacity:0.3"' : ''}><i class="fa-solid fa-chevron-right"></i></button>
+                            <button class="thumb-btn delete" onclick="deletePage(${index})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
 
-  handle.addEventListener("pointermove", event => {
-    if (!activeHandle || activeHandle !== handle.dataset.id) return;
+            if (pages.length > 0) {
+                pageCounter.classList.remove('hidden');
+                pageCounter.innerText = `${pages.length} Halaman`;
+            } else {
+                switchView('home');
+            }
+        }
 
-    const rect = editorCanvas.getBoundingClientRect();
-    const x = (event.clientX - rect.left) * editorCanvas.width / rect.width;
-    const y = (event.clientY - rect.top) * editorCanvas.height / rect.height;
+        window.movePage = function(index, direction) {
+            const target = index + direction;
+            if (target < 0 || target >= pages.length) return;
+            const temp = pages[index];
+            pages[index] = pages[target];
+            pages[target] = temp;
+            updateManagerView();
+        };
 
-    cropPoints[activeHandle] = {
-      x: Math.max(0, Math.min(editorCanvas.width, x)),
-      y: Math.max(0, Math.min(editorCanvas.height, y))
-    };
+        window.deletePage = function(index) {
+            if (confirm('Hapus halaman ini?')) {
+                pages.splice(index, 1);
+                updateManagerView();
+            }
+        };
 
-    updateCropUI();
-  });
+        function openPreviewModal() {
+            if (pages.length === 0) return alert('Belum ada halaman untuk dibuat PDF.');
+            modalPdf.classList.remove('hidden');
+            generatePDFDataUrl((pdfDataUrl) => {
+                const iframe = document.getElementById('pdf-preview-iframe');
+                const placeholder = document.getElementById('pdf-preview-placeholder');
+                iframe.src = pdfDataUrl;
+                iframe.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            });
+        }
 
-  handle.addEventListener("pointerup", () => activeHandle = null);
-  handle.addEventListener("pointercancel", () => activeHandle = null);
-});
+        function generatePDFDataUrl(callback) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
 
-window.addEventListener("resize", updateCropUI);
+            pages.forEach((page, index) => {
+                if (index > 0) doc.addPage();
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const img = new Image();
+                img.src = page.dataUrl;
+                
+                let imgWidth = pageWidth;
+                let imgHeight = (img.height * pageWidth) / img.width;
 
-// ===============================
-// FILTERS
-// ===============================
-const filterButtons = document.querySelectorAll(".filter-btn");
-const brightnessInput = document.getElementById("range-brightness");
-const contrastInput = document.getElementById("range-contrast");
+                if (imgHeight > pageHeight) {
+                    imgHeight = pageHeight;
+                    imgWidth = (img.width * pageHeight) / img.height;
+                }
 
-filterButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    filterButtons.forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
-    activeFilter = button.dataset.filter;
-    redrawEditorCanvas();
-  });
-});
+                doc.addImage(page.dataUrl, 'JPEG', (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
+            });
 
-brightnessInput.addEventListener("input", redrawEditorCanvas);
-contrastInput.addEventListener("input", redrawEditorCanvas);
+            const pdfOutputUrl = doc.output('datauristring');
+            callback(pdfOutputUrl);
+        }
 
-function resetFiltersAndSliders() {
-  activeFilter = "original";
+        function generateAndDownloadPDF() {
+            const filenameInput = document.getElementById('pdf-filename').value.trim() || 'Dokumen_ScanKu';
+            const finalFilename = filenameInput.endsWith('.pdf') ? filenameInput : filenameInput + '.pdf';
 
-  filterButtons.forEach(button => {
-    button.classList.toggle("active", button.dataset.filter === "original");
-  });
+            showLoading('Menyiapkan file PDF...');
+            
+            setTimeout(() => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
 
-  brightnessInput.value = 0;
-  contrastInput.value = 0;
-  redrawEditorCanvas();
-}
+                pages.forEach((page, index) => {
+                    if (index > 0) doc.addPage();
+                    const pageWidth = 210;
+                    const pageHeight = 297;
+                    const img = new Image();
+                    img.src = page.dataUrl;
+                    
+                    let imgWidth = pageWidth;
+                    let imgHeight = (img.height * pageWidth) / img.width;
+                    if (imgHeight > pageHeight) {
+                        imgHeight = pageHeight;
+                        imgWidth = (img.width * pageHeight) / img.height;
+                    }
 
-function redrawEditorCanvas() {
-  if (!currentSourceImage) return;
+                    doc.addImage(page.dataUrl, 'JPEG', (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
+                });
 
-  editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
-  editorCtx.drawImage(currentSourceImage, 0, 0);
-
-  const imageData = editorCtx.getImageData(
-    0, 0, editorCanvas.width, editorCanvas.height
-  );
-
-  const data = imageData.data;
-  const brightness = Number(brightnessInput.value);
-  const contrast = Number(contrastInput.value);
-  const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i];
-    let g = data[i + 1];
-    let b = data[i + 2];
-
-    if (activeFilter === "grayscale") {
-      const avg = (r + g + b) / 3;
-      r = g = b = avg;
-    } else if (activeFilter === "magic") {
-      const avg = r * 0.3 + g * 0.59 + b * 0.11;
-      r = g = b = avg > 140 ? 255 : avg * 0.8;
-    } else if (activeFilter === "darken") {
-      const avg = (r + g + b) / 3;
-      r = g = b = avg < 120 ? 0
+                doc.save(finalFilename);
+                hideLoading();
+                modalPdf.classList.add('hidden');
+            }, 500);
+        }
+    </script>
+</body>
+</html>

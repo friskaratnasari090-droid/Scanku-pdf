@@ -980,45 +980,64 @@
             loadIntoEditor(canvas);
         }
 
-        function handleImageUpload(e) {
-            const files = e.target.files;
+        async function handleImageUpload(e) {
+            const files = Array.from(e.target.files || []);
             if (!files.length) return;
 
             showLoading('Memuat gambar...');
-            let processedCount = 0;
+            try {
+                // Muat semua gambar terlebih dahulu agar urutan halaman tetap sama.
+                const loadedCanvases = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+                    if (!file.type || !file.type.startsWith('image/')) {
+                        reject(new Error('File yang dipilih bukan gambar.'));
+                        return;
+                    }
 
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
+                    const reader = new FileReader();
+                    reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+                    reader.onload = () => {
+                        const img = new Image();
+                        img.onerror = () => reject(new Error('Gagal membuka salah satu gambar.'));
+                        img.onload = () => {
+                            const width = img.naturalWidth || img.width;
+                            const height = img.naturalHeight || img.height;
+                            if (!width || !height) {
+                                reject(new Error('Ukuran gambar tidak valid.'));
+                                return;
+                            }
 
-                        if (processedCount === 0) {
-                            loadIntoEditor(canvas);
-                        } else {
-                            const pageObj = {
-                                id: 'page_' + Date.now() + Math.random(),
-                                dataUrl: canvas.toDataURL('image/jpeg', 0.85)
-                            };
-                            pages.push(pageObj);
-                            updateManagerView();
-                        }
-
-                        processedCount++;
-                        if (processedCount === files.length) {
-                            hideLoading();
-                        }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve(canvas);
+                        };
+                        img.src = reader.result;
                     };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-            e.target.value = '';
+                    reader.readAsDataURL(file);
+                })));
+
+                // Gambar pertama tetap masuk editor seperti alur asli.
+                loadIntoEditor(loadedCanvases[0]);
+
+                // Gambar berikutnya disimpan dengan resolusi asli, tanpa dipaksa
+                // mengikuti ukuran gambar pertama.
+                for (let i = 1; i < loadedCanvases.length; i++) {
+                    pages.push({
+                        id: 'page_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2),
+                        dataUrl: loadedCanvases[i].toDataURL('image/jpeg', 0.95)
+                    });
+                }
+
+                if (pages.length > 0) updateManagerView();
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Terjadi kesalahan saat memuat gambar.');
+            } finally {
+                hideLoading();
+                e.target.value = '';
+            }
         }
 
         let editorCanvas = document.getElementById('editor-canvas');
@@ -1244,84 +1263,97 @@
             }
         };
 
-        function openPreviewModal() {
+        async function openPreviewModal() {
             if (pages.length === 0) return alert('Belum ada halaman untuk dibuat PDF.');
+
             modalPdf.classList.remove('hidden');
-            generatePDFDataUrl((pdfDataUrl) => {
-                const iframe = document.getElementById('pdf-preview-iframe');
-                const placeholder = document.getElementById('pdf-preview-placeholder');
+            const iframe = document.getElementById('pdf-preview-iframe');
+            const placeholder = document.getElementById('pdf-preview-placeholder');
+            iframe.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            placeholder.querySelector('span').innerText = 'Menyiapkan pratinjau PDF...';
+
+            try {
+                const pdfDataUrl = await generatePDFDataUrl();
                 iframe.src = pdfDataUrl;
                 iframe.classList.remove('hidden');
                 placeholder.classList.add('hidden');
+            } catch (error) {
+                console.error(error);
+                placeholder.querySelector('span').innerText = 'Gagal membuat pratinjau PDF.';
+            }
+        }
+
+        // Tunggu setiap gambar selesai dimuat sebelum membaca dimensinya.
+        function loadPdfImage(dataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Salah satu halaman gagal dimuat ke PDF.'));
+                img.src = dataUrl;
             });
         }
 
-        function generatePDFDataUrl(callback) {
+        async function buildPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
-                format: 'a4'
+                format: 'a4',
+                compress: true
             });
 
-            pages.forEach((page, index) => {
-                if (index > 0) doc.addPage();
-                const pageWidth = 210;
-                const pageHeight = 297;
-                const img = new Image();
-                img.src = page.dataUrl;
-                
-                let imgWidth = pageWidth;
-                let imgHeight = (img.height * pageWidth) / img.width;
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 0; // Gambar di-fit ke area A4 tanpa mengubah rasio.
 
-                if (imgHeight > pageHeight) {
-                    imgHeight = pageHeight;
-                    imgWidth = (img.width * pageHeight) / img.height;
-                }
+            for (let index = 0; index < pages.length; index++) {
+                if (index > 0) doc.addPage('a4', 'portrait');
 
-                doc.addImage(page.dataUrl, 'JPEG', (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
-            });
+                const img = await loadPdfImage(pages[index].dataUrl);
+                const naturalWidth = img.naturalWidth || img.width;
+                const naturalHeight = img.naturalHeight || img.height;
 
-            const pdfOutputUrl = doc.output('datauristring');
-            callback(pdfOutputUrl);
+                // Pertahankan rasio asli; jangan meregangkan gambar.
+                const scale = Math.min(
+                    (pageWidth - margin * 2) / naturalWidth,
+                    (pageHeight - margin * 2) / naturalHeight
+                );
+                const imgWidth = naturalWidth * scale;
+                const imgHeight = naturalHeight * scale;
+                const x = (pageWidth - imgWidth) / 2;
+                const y = (pageHeight - imgHeight) / 2;
+
+                doc.addImage(img, 'JPEG', x, y, imgWidth, imgHeight, undefined, 'FAST');
+            }
+
+            return doc;
         }
 
-        function generateAndDownloadPDF() {
+        async function generatePDFDataUrl() {
+            const doc = await buildPDF();
+            return doc.output('datauristring');
+        }
+
+        async function generateAndDownloadPDF() {
+            if (pages.length === 0) return alert('Belum ada halaman untuk dibuat PDF.');
+
             const filenameInput = document.getElementById('pdf-filename').value.trim() || 'Dokumen_ScanKu';
-            const finalFilename = filenameInput.endsWith('.pdf') ? filenameInput : filenameInput + '.pdf';
+            const finalFilename = filenameInput.toLowerCase().endsWith('.pdf') ? filenameInput : filenameInput + '.pdf';
 
             showLoading('Menyiapkan file PDF...');
-            
-            setTimeout(() => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                pages.forEach((page, index) => {
-                    if (index > 0) doc.addPage();
-                    const pageWidth = 210;
-                    const pageHeight = 297;
-                    const img = new Image();
-                    img.src = page.dataUrl;
-                    
-                    let imgWidth = pageWidth;
-                    let imgHeight = (img.height * pageWidth) / img.width;
-                    if (imgHeight > pageHeight) {
-                        imgHeight = pageHeight;
-                        imgWidth = (img.width * pageHeight) / img.height;
-                    }
-
-                    doc.addImage(page.dataUrl, 'JPEG', (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
-                });
-
+            try {
+                const doc = await buildPDF();
                 doc.save(finalFilename);
-                hideLoading();
                 modalPdf.classList.add('hidden');
-            }, 500);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Gagal membuat PDF. Silakan coba lagi.');
+            } finally {
+                hideLoading();
+            }
         }
+
     </script>
 </body>
 </html>

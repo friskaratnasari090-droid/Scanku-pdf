@@ -986,7 +986,7 @@
 
             showLoading('Memuat gambar...');
             try {
-                // Muat semua gambar terlebih dahulu agar urutan halaman tetap sama.
+                const MAX_DIMENSION = 1600; // Batasi resolusi max agar tidak memberatkan browser
                 const loadedCanvases = await Promise.all(files.map(file => new Promise((resolve, reject) => {
                     if (!file.type || !file.type.startsWith('image/')) {
                         reject(new Error('File yang dipilih bukan gambar.'));
@@ -999,11 +999,22 @@
                         const img = new Image();
                         img.onerror = () => reject(new Error('Gagal membuka salah satu gambar.'));
                         img.onload = () => {
-                            const width = img.naturalWidth || img.width;
-                            const height = img.naturalHeight || img.height;
+                            let width = img.naturalWidth || img.width;
+                            let height = img.naturalHeight || img.height;
                             if (!width || !height) {
                                 reject(new Error('Ukuran gambar tidak valid.'));
                                 return;
+                            }
+
+                            // Resize proporsional jika melebihi MAX_DIMENSION
+                            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                                if (width > height) {
+                                    height = Math.round((height * MAX_DIMENSION) / width);
+                                    width = MAX_DIMENSION;
+                                } else {
+                                    width = Math.round((width * MAX_DIMENSION) / height);
+                                    height = MAX_DIMENSION;
+                                }
                             }
 
                             const canvas = document.createElement('canvas');
@@ -1018,15 +1029,12 @@
                     reader.readAsDataURL(file);
                 })));
 
-                // Gambar pertama tetap masuk editor seperti alur asli.
                 loadIntoEditor(loadedCanvases[0]);
 
-                // Gambar berikutnya disimpan dengan resolusi asli, tanpa dipaksa
-                // mengikuti ukuran gambar pertama.
                 for (let i = 1; i < loadedCanvases.length; i++) {
                     pages.push({
                         id: 'page_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2),
-                        dataUrl: loadedCanvases[i].toDataURL('image/jpeg', 0.95)
+                        dataUrl: loadedCanvases[i].toDataURL('image/jpeg', 0.9)
                     });
                 }
 
@@ -1184,25 +1192,25 @@
         function applyCropAndFilters() {
             showLoading('Memproses koreksi dokumen...');
             setTimeout(() => {
-                const outputCanvas = document.createElement('canvas');
-                const width = Math.max(
-                    Math.hypot(cropPoints.tr.x - cropPoints.tl.x, cropPoints.tr.y - cropPoints.tl.y),
-                    Math.hypot(cropPoints.br.x - cropPoints.bl.x, cropPoints.br.y - cropPoints.bl.y)
-                );
-                const height = Math.max(
-                    Math.hypot(cropPoints.bl.x - cropPoints.tl.x, cropPoints.bl.y - cropPoints.tl.y),
-                    Math.hypot(cropPoints.br.x - cropPoints.tr.x, cropPoints.br.y - cropPoints.tr.y)
-                );
+                const xs = [cropPoints.tl.x, cropPoints.tr.x, cropPoints.br.x, cropPoints.bl.x];
+                const ys = [cropPoints.tl.y, cropPoints.tr.y, cropPoints.br.y, cropPoints.bl.y];
 
+                const minX = Math.max(0, Math.min(...xs));
+                const maxX = Math.min(editorCanvas.width, Math.max(...xs));
+                const minY = Math.max(0, Math.min(...ys));
+                const maxY = Math.min(editorCanvas.height, Math.max(...ys));
+
+                const width = maxX - minX;
+                const height = maxY - minY;
+
+                const outputCanvas = document.createElement('canvas');
                 outputCanvas.width = width;
                 outputCanvas.height = height;
                 const outCtx = outputCanvas.getContext('2d');
 
                 outCtx.drawImage(
                     editorCanvas,
-                    Math.min(cropPoints.tl.x, cropPoints.bl.x),
-                    Math.min(cropPoints.tl.y, cropPoints.tr.y),
-                    width, height,
+                    minX, minY, width, height,
                     0, 0, width, height
                 );
 
@@ -1284,7 +1292,6 @@
             }
         }
 
-        // Tunggu setiap gambar selesai dimuat sebelum membaca dimensinya.
         function loadPdfImage(dataUrl) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -1305,7 +1312,7 @@
 
             const pageWidth = 210;
             const pageHeight = 297;
-            const margin = 0; // Gambar di-fit ke area A4 tanpa mengubah rasio.
+            const margin = 0;
 
             for (let index = 0; index < pages.length; index++) {
                 if (index > 0) doc.addPage('a4', 'portrait');
@@ -1314,7 +1321,6 @@
                 const naturalWidth = img.naturalWidth || img.width;
                 const naturalHeight = img.naturalHeight || img.height;
 
-                // Pertahankan rasio asli; jangan meregangkan gambar.
                 const scale = Math.min(
                     (pageWidth - margin * 2) / naturalWidth,
                     (pageHeight - margin * 2) / naturalHeight
@@ -1353,7 +1359,7 @@
                 hideLoading();
             }
         }
-
     </script>
 </body>
 </html>
+```[cite: 1]

@@ -1,89 +1,388 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ScanKu PDF - Pemindai Dokumen Pintar</title>
-  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-  <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css)" />
-  <style>
-    @import url('[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)');
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanKu PDF - Web Document Scanner</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <!-- Cropper.js JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
-  <!-- Card Utama -->
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-lg border border-slate-100 p-6 sm:p-8">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-indigo-200 shadow-md">
+          <i class="fa-solid fa-file-pdf text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900">ScanKu <span class="text-indigo-600">PDF</span></h1>
+          <p class="text-xs text-slate-500">Scan, Crop, dan Konversi Gambar ke Dokumen PDF</p>
+        </div>
+      </div>
+      <div class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span id="pageCount">0 Halaman Siap</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-8">
     
-    <!-- Header Logo -->
-    <div class="flex items-center gap-2 mb-8">
-      <div class="text-indigo-600 text-xl">
-        <i class="fa-solid fa-file-invoice"></i>
-      </div>
-      <span class="font-bold text-xl text-indigo-900 tracking-tight">ScanKu</span>
-      <span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">PDF</span>
-    </div>
+    <!-- Upload Section -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+      <div class="text-center max-w-lg mx-auto">
+        <h2 class="text-lg font-semibold text-slate-900 mb-2">Tambahkan Dokumen atau Foto</h2>
+        <p class="text-sm text-slate-500 mb-6">Ambil foto dokumen langsung dengan kamera smartphone Anda atau unggah file gambar dari galeri/penyimpanan.</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Tombol Kamera -->
+          <label class="cursor-pointer flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition shadow-sm hover:shadow active:scale-95">
+            <i class="fa-solid fa-camera text-lg"></i>
+            <span>Buka Kamera</span>
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+          </label>
 
-    <!-- Hero Icon -->
-    <div class="flex justify-center mb-5">
-      <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-2xl">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-      </div>
-    </div>
-
-    <!-- Judul & Deskripsi -->
-    <div class="text-center mb-8">
-      <h1 class="text-2xl font-bold text-slate-900 mb-2">
-        Pemindai Dokumen Pintar
-      </h1>
-      <p class="text-sm text-slate-500 leading-relaxed">
-        Ubah dokumen fisik, catatan, atau kartu identitas Anda menjadi PDF berkualitas tinggi secara instan di browser.
-      </p>
-    </div>
-
-    <!-- Tombol Aksi -->
-    <div class="space-y-3 mb-8">
-      <!-- Input file tersembunyi untuk kamera & galeri -->
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" />
-      <input type="file" id="uploadInput" accept="image/*" multiple class="hidden" />
-
-      <button 
-        onclick="document.getElementById('cameraInput').click()"
-        class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-sm shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2.5 cursor-pointer">
-        <i class="fa-solid fa-camera"></i>
-        <span>Scan Kamera</span>
-      </button>
-
-      <button 
-        onclick="document.getElementById('uploadInput').click()"
-        class="w-full py-3.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 font-semibold text-sm transition flex items-center justify-center gap-2.5 cursor-pointer">
-        <i class="fa-regular fa-image"></i>
-        <span>Upload Gambar</span>
-      </button>
-    </div>
-
-    <!-- Daftar Fitur -->
-    <div class="border-t border-slate-100 pt-5 text-xs text-slate-500">
-      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2">
-        <div class="flex items-center gap-1.5">
-          <i class="fa-solid fa-check text-emerald-500"></i>
-          <span>Deteksi & Filter Otomatis</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <i class="fa-solid fa-check text-emerald-500"></i>
-          <span>Multi-halaman & Atur Urutan</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <i class="fa-solid fa-check text-emerald-500"></i>
-          <span>100% Aman & Tanpa Server</span>
+          <!-- Tombol Galeri -->
+          <label class="cursor-pointer flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition active:scale-95 border border-slate-200">
+            <i class="fa-regular fa-image text-lg"></i>
+            <span>Pilih dari Galeri</span>
+            <input type="file" id="galleryInput" accept="image/*" class="hidden">
+          </label>
         </div>
       </div>
     </div>
 
+    <!-- Scanned Pages Section -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-slate-900 text-base sm:text-lg">Daftar Halaman Dokumen</h3>
+        <button id="clearAllBtn" class="text-xs font-semibold text-rose-600 hover:text-rose-700 hidden">
+          Hapus Semua
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center">
+        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-images text-xl"></i>
+        </div>
+        <p class="text-sm font-medium text-slate-600">Belum ada halaman yang ditambahkan</p>
+        <p class="text-xs text-slate-400 mt-1">Gunakan tombol kamera atau galeri di atas untuk mulai memindai.</p>
+      </div>
+
+      <!-- Thumbnail Grid -->
+      <div id="pagesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+    </div>
+
+    <!-- Export Settings & Action Bar -->
+    <div id="exportSection" class="hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Nama File Dokumen</label>
+          <div class="relative">
+            <input type="text" id="pdfFileName" value="Dokumen-ScanKu" class="w-full text-sm rounded-xl border border-slate-300 px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <span class="absolute right-3 top-2.5 text-xs text-slate-400">.pdf</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Ukuran Halaman</label>
+          <select id="pageSize" class="w-full text-sm rounded-xl border border-slate-300 px-3.5 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="a4">A4 (Standar Dokumen)</option>
+            <option value="letter">Letter</option>
+            <option value="fit">Sesuaikan dengan Ukuran Gambar</option>
+          </select>
+        </div>
+        <div>
+          <button id="generatePdfBtn" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl transition shadow hover:shadow-md active:scale-95">
+            <i class="fa-solid fa-file-arrow-down text-lg"></i>
+            <span>Unduh File PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Crop Modal -->
+  <div id="cropModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-white rounded-2xl w-full max-w-3xl flex flex-col max-h-[90vh] shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-crop-simple text-indigo-600"></i>
+          <h4 class="font-bold text-slate-800 text-sm sm:text-base">Sesuaikan & Crop Halaman</h4>
+        </div>
+        <button id="cancelCropBtn" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Image Canvas Viewport -->
+      <div class="flex-1 bg-slate-950 p-4 flex items-center justify-center overflow-hidden min-h-[320px] max-h-[58vh]">
+        <img id="imageToCrop" src="" alt="Gambar untuk di-crop" class="max-w-full max-h-full block">
+      </div>
+
+      <!-- Cropper Controls -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="rotateLeftBtn" title="Putar Kiri 90°" class="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 text-sm transition shadow-sm">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <button id="rotateRightBtn" title="Putar Kanan 90°" class="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 text-sm transition shadow-sm">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button id="resetCropBtn" title="Reset Crop" class="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 text-sm transition shadow-sm">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="discardBtn" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 text-sm font-medium hover:bg-slate-100 transition">
+            Batal
+          </button>
+          <button id="applyCropBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium flex items-center gap-2 transition shadow-sm">
+            <i class="fa-solid fa-check"></i>
+            <span>Simpan Halaman</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+    ScanKu PDF &copy; Web Document Scanner Client-side. File diproses langsung di peramban Anda dengan aman.
+  </footer>
+
+  <script>
+    // State
+    const pages = [];
+    let cropper = null;
+
+    // DOM Elements
+    const cameraInput = document.getElementById('cameraInput');
+    const galleryInput = document.getElementById('galleryInput');
+    const cropModal = document.getElementById('cropModal');
+    const imageToCrop = document.getElementById('imageToCrop');
+    const applyCropBtn = document.getElementById('applyCropBtn');
+    const cancelCropBtn = document.getElementById('cancelCropBtn');
+    const discardBtn = document.getElementById('discardBtn');
+    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+    const rotateRightBtn = document.getElementById('rotateRightBtn');
+    const resetCropBtn = document.getElementById('resetCropBtn');
+    const pagesGrid = document.getElementById('pagesGrid');
+    const emptyState = document.getElementById('emptyState');
+    const pageCount = document.getElementById('pageCount');
+    const exportSection = document.getElementById('exportSection');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+
+    // Handle File Selection
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        openCropperModal(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      // Reset input value agar file yang sama bisa dipilih ulang jika perlu
+      event.target.value = '';
+    }
+
+    cameraInput.addEventListener('change', handleFileSelect);
+    galleryInput.addEventListener('change', handleFileSelect);
+
+    // Open Cropper Modal
+    function openCropperModal(dataUrl) {
+      imageToCrop.src = dataUrl;
+      cropModal.classList.remove('hidden');
+
+      if (cropper) {
+        cropper.destroy();
+      }
+
+      // Initialize Cropper.js
+      cropper = new Cropper(imageToCrop, {
+        viewMode: 1,
+        autoCropArea: 0.9,
+        responsive: true,
+        restore: false,
+        guides: true,
+        center: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false
+      });
+    }
+
+    // Close Modal
+    function closeCropModal() {
+      cropModal.classList.add('hidden');
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      imageToCrop.src = '';
+    }
+
+    cancelCropBtn.addEventListener('click', closeCropModal);
+    discardBtn.addEventListener('click', closeCropModal);
+
+    // Cropper Actions
+    rotateLeftBtn.addEventListener('click', () => cropper && cropper.rotate(-90));
+    rotateRightBtn.addEventListener('click', () => cropper && cropper.rotate(90));
+    resetCropBtn.addEventListener('click', () => cropper && cropper.reset());
+
+    // Apply Crop & Save Page
+    applyCropBtn.addEventListener('click', () => {
+      if (!cropper) return;
+
+      const canvas = cropper.getCroppedCanvas({
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+      });
+
+      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      pages.push(croppedDataUrl);
+      renderPages();
+      closeCropModal();
+    });
+
+    // Render Scanned Pages List
+    function renderPages() {
+      pagesGrid.innerHTML = '';
+      
+      if (pages.length === 0) {
+        emptyState.classList.remove('hidden');
+        exportSection.classList.add('hidden');
+        clearAllBtn.classList.add('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        exportSection.classList.remove('hidden');
+        clearAllBtn.classList.remove('hidden');
+
+        pages.forEach((src, index) => {
+          const item = document.createElement('div');
+          item.className = "group relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col";
+          item.innerHTML = `
+            <div class="aspect-[3/4] overflow-hidden bg-slate-100 flex items-center justify-center">
+              <img src="${src}" class="w-full h-full object-cover" alt="Halaman ${index + 1}">
+            </div>
+            <div class="p-2 bg-white flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
+              <span class="font-medium">Hal. ${index + 1}</span>
+              <button onclick="removePage(${index})" class="text-rose-500 hover:text-rose-700 p-1" title="Hapus halaman ini">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          `;
+          pagesGrid.appendChild(item);
+        });
+      }
+
+      pageCount.innerText = `${pages.length} Halaman Siap`;
+    }
+
+    // Remove single page
+    window.removePage = function(index) {
+      pages.splice(index, 1);
+      renderPages();
+    };
+
+    // Clear all pages
+    clearAllBtn.addEventListener('click', () => {
+      if (confirm('Apakah Anda yakin ingin menghapus semua halaman yang sudah dipindai?')) {
+        pages.length = 0;
+        renderPages();
+      }
+    });
+
+    // Generate & Download PDF
+    generatePdfBtn.addEventListener('click', async () => {
+      if (pages.length === 0) return;
+
+      const originalBtnText = generatePdfBtn.innerHTML;
+      generatePdfBtn.disabled = true;
+      generatePdfBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Membuat PDF...</span>`;
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const pageSizeOpt = document.getElementById('pageSize').value;
+        const rawFileName = document.getElementById('pdfFileName').value.trim() || 'Dokumen-ScanKu';
+        const fileName = `${rawFileName}.pdf`;
+
+        let pdf;
+
+        for (let i = 0; i < pages.length; i++) {
+          const pageData = pages[i];
+          const img = new Image();
+          img.src = pageData;
+
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+
+          const imgWidth = img.width;
+          const imgHeight = img.height;
+
+          if (pageSizeOpt === 'fit') {
+            // Sesuai rasio asli gambar
+            const orientation = imgWidth > imgHeight ? 'landscape' : 'portrait';
+            if (i === 0) {
+              pdf = new jsPDF({ orientation: orientation, unit: 'px', format: [imgWidth, imgHeight] });
+            } else {
+              pdf.addPage([imgWidth, imgHeight], orientation);
+            }
+            pdf.addImage(pageData, 'JPEG', 0, 0, imgWidth, imgHeight);
+          } else {
+            // Ukuran standar A4 atau Letter
+            const format = pageSizeOpt; // 'a4' atau 'letter'
+            const orientation = imgWidth > imgHeight ? 'landscape' : 'portrait';
+
+            if (i === 0) {
+              pdf = new jsPDF({ orientation: orientation, unit: 'mm', format: format });
+            } else {
+              pdf.addPage(format, orientation);
+            }
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            // Hitung skala aspect ratio agar pas di halaman tanpa distorsi
+            const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+            const renderWidth = imgWidth * ratio;
+            const renderHeight = imgHeight * ratio;
+            const xOffset = (pageWidth - renderWidth) / 2;
+            const yOffset = (pageHeight - renderHeight) / 2;
+
+            pdf.addImage(pageData, 'JPEG', xOffset, yOffset, renderWidth, renderHeight);
+          }
+        }
+
+        // Simpan dokumen
+        pdf.save(fileName);
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat memproses PDF. Silakan coba lagi.');
+      } finally {
+        generatePdfBtn.disabled = false;
+        generatePdfBtn.innerHTML = originalBtnText;
+      }
+    });
+  </script>
 </body>
 </html>
